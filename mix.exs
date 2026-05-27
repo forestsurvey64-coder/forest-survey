@@ -102,11 +102,17 @@ defmodule ForestSurvey.MixProject do
       "assets.setup": [
         "tailwind.install --if-missing",
         "esbuild.install --if-missing",
-        "ash_typescript.npm_install"
+        "ash_typescript.npm_install",
+        "cmd --cd assets npm install"
       ],
-      "assets.build": ["compile", "tailwind forest_survey", "esbuild forest_survey"],
-      "assets.deploy": [
+      "assets.build": [
+        "compile",
         "cmd --cd assets npm install",
+        "tailwind forest_survey",
+        "esbuild forest_survey"
+      ],
+      "assets.deploy": [
+        "cmd --cd assets npm ci",
         "tailwind forest_survey --minify",
         "esbuild forest_survey --minify",
         "phx.digest"
