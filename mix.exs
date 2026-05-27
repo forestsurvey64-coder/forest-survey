@@ -88,7 +88,14 @@ defmodule ForestSurvey.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ash_postgres.create", "ash_postgres.migrate", "run priv/repo/seeds.exs", "assets.setup", "assets.build"],
+      setup: [
+        "deps.get",
+        "ash_postgres.create",
+        "ash_postgres.migrate",
+        "run priv/repo/seeds.exs",
+        "assets.setup",
+        "assets.build"
+      ],
       "ecto.setup": ["ash_postgres.create", "ash_postgres.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ash_postgres.drop", "ecto.setup"],
       test: ["ash_postgres.create --quiet", "ash_postgres.migrate --quiet", "test"],
@@ -99,6 +106,7 @@ defmodule ForestSurvey.MixProject do
       ],
       "assets.build": ["compile", "tailwind forest_survey", "esbuild forest_survey"],
       "assets.deploy": [
+        "cmd --cd assets npm install",
         "tailwind forest_survey --minify",
         "esbuild forest_survey --minify",
         "phx.digest"
