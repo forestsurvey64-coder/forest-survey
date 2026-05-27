@@ -1,0 +1,122 @@
+<div class="space-y-6">
+  <%!-- Page header --%>
+  <div class="border-b border-base-300 pb-6 flex items-end justify-between">
+    <div>
+      <h1 class="font-serif text-4xl font-semibold text-base-content">Vendedores</h1>
+      <p class="mt-2 text-base-content/50">Equipo de vendedores activos en el sistema.</p>
+    </div>
+    <.link navigate={~p"/admin/vendors/new"} class="btn btn-primary btn-sm">
+      <.icon name="hero-plus" class="size-4" /> Agregar
+    </.link>
+  </div>
+
+  <%!-- Table --%>
+  <div class="rounded-2xl border border-base-300 overflow-hidden">
+    <table class="table w-full">
+      <thead>
+        <tr class="bg-base-200 border-b border-base-300">
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Nombre</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Equipo</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3 hidden sm:table-cell">Email</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3 hidden sm:table-cell">WhatsApp</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= if Enum.empty?(@vendors) do %>
+          <tr>
+            <td colspan="5" class="text-center py-16">
+              <div class="flex flex-col items-center gap-2 text-base-content/40">
+                <.icon name="hero-users" class="size-8" />
+                <p class="text-sm">No hay vendedores activos</p>
+              </div>
+            </td>
+          </tr>
+        <% else %>
+          <%= for vendor <- @vendors do %>
+            <tr class="border-b border-base-200 hover:bg-base-50 transition-colors">
+              <td class="font-medium text-sm py-3">{vendor.name}</td>
+              <td class="py-3">
+                <%= if vendor.team do %>
+                  <span class="badge badge-ghost badge-sm">{vendor.team}</span>
+                <% else %>
+                  <span class="text-base-content/30 text-xs">—</span>
+                <% end %>
+              </td>
+              <td class="text-sm text-base-content/60 py-3 hidden sm:table-cell">{vendor.email || "—"}</td>
+              <td class="text-sm text-base-content/60 py-3 hidden sm:table-cell">{vendor.whatsapp || "—"}</td>
+              <td class="py-3">
+                <div class="flex gap-1 justify-end">
+                  <.link navigate={~p"/admin/vendors/#{vendor.id}/edit"} class="btn btn-ghost btn-xs">
+                    <.icon name="hero-pencil" class="size-3.5" />
+                  </.link>
+                  <button
+                    class="btn btn-ghost btn-xs text-error tooltip"
+                    data-tip="Archivar vendedor"
+                    phx-click="archive"
+                    phx-value-id={vendor.id}
+                    data-confirm="¿Archivar este vendedor?"
+                  >
+                    <.icon name="hero-archive-box" class="size-3.5" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%!-- Modal for new/edit --%>
+<%= if @form do %>
+  <div class="modal modal-open">
+    <div class="modal-box rounded-2xl shadow-2xl">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" phx-click="close_modal">
+        <.icon name="hero-x-mark" class="size-4" />
+      </button>
+      <h3 class="font-serif text-2xl font-semibold mb-5">
+        <%= if @live_action == :new, do: "Nuevo vendedor", else: "Editar vendedor" %>
+      </h3>
+
+      <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">
+            Nombre <span class="text-error">*</span>
+          </label>
+          <input type="text" name={@form[:name].name} value={@form[:name].value}
+                 class="input input-bordered w-full" placeholder="Nombre completo" />
+          <%= if @form[:name].errors != [] do %>
+            <p class="text-error text-xs">{hd(@form[:name].errors) |> elem(0)}</p>
+          <% end %>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">Equipo</label>
+          <input type="text" name={@form[:team].name} value={@form[:team].value}
+                 class="input input-bordered w-full" placeholder="Ej. Ventas Cancún" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">Email</label>
+            <input type="email" name={@form[:email].name} value={@form[:email].value}
+                   class="input input-bordered w-full" placeholder="correo@forest.mx" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">WhatsApp</label>
+            <input type="text" name={@form[:whatsapp].name} value={@form[:whatsapp].value}
+                   class="input input-bordered w-full" placeholder="+52 998 000 0000" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-base-200">
+          <button type="button" class="btn btn-ghost btn-sm" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+        </div>
+      </.form>
+    </div>
+    <div class="modal-backdrop" phx-click="close_modal"></div>
+  </div>
+<% end %>

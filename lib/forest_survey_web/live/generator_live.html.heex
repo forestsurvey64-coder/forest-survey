@@ -1,0 +1,227 @@
+<div class="space-y-8">
+  <%!-- Page header --%>
+  <div class="border-b border-base-300 pb-6">
+    <h1 class="font-serif text-4xl font-semibold text-base-content">Generador de encuestas</h1>
+    <p class="mt-2 text-base-content/50">Selecciona un vendedor y un cliente para generar el link de encuesta.</p>
+  </div>
+
+  <%!-- Selector form --%>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <%!-- Vendor select --%>
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        Vendedor
+      </label>
+      <form phx-update="ignore" id="vendor-select-form">
+        <select
+          id="vendor-select"
+          phx-hook="TomSelect"
+          data-event="select_vendor"
+          data-key="vendor_id"
+          class="w-full"
+          name="vendor_id"
+        >
+          <option value="">— Elige tu nombre —</option>
+          <%= for vendor <- @vendors do %>
+            <option value={vendor.id} selected={to_string(vendor.id) == to_string(@vendor_id || "")}>
+              {vendor.name}<%= if vendor.team, do: " · #{vendor.team}" %>
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+
+    <%!-- Config select --%>
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        Formulario
+      </label>
+      <form phx-update="ignore" id="config-select-form">
+        <select
+          id="config-select"
+          phx-hook="TomSelect"
+          data-event="select_config"
+          data-key="config_id"
+          class="w-full"
+          name="config_id"
+        >
+          <option value="">— Elige un formulario —</option>
+          <%= for config <- @configs do %>
+            <option value={config.id} selected={@config && to_string(config.id) == to_string(@config.id)}>
+              {config.name}
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+
+    <%!-- Client select --%>
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        Cliente
+      </label>
+      <form phx-update="ignore" id="client-select-form">
+        <select
+          id="client-select"
+          phx-hook="TomSelect"
+          data-event="select_client"
+          data-key="client_id"
+          class="w-full"
+          name="client_id"
+        >
+          <option value="">— Elige un cliente —</option>
+          <%= for client <- @clients do %>
+            <option value={client.id} selected={to_string(client.id) == to_string(@client_id || "")}>
+              <%= if client.main_contact do %>
+                {client.main_contact} · {client.name}
+              <% else %>
+                {client.name}
+              <% end %>
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <%!-- Result --%>
+  <%= if @eligibility do %>
+    <% client = find_record(@clients, @client_id) %>
+
+    <%= case @eligibility do %>
+      <% :first_contact -> %>
+        <div class="rounded-2xl border border-success/30 bg-success/5 p-6 space-y-4">
+          <div class="flex items-start gap-4">
+            <div class="size-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0">
+              <.icon name="hero-check-circle" class="size-5 text-success" />
+            </div>
+            <div>
+              <h3 class="font-semibold text-base-content"><%= client && client.name %></h3>
+              <p class="text-sm text-base-content/60 mt-0.5">Primer contacto · nunca ha sido encuestado</p>
+            </div>
+          </div>
+
+          <%= if @generated_link do %>
+            <div class="border-t border-success/20 pt-4 space-y-3">
+              <div class="flex items-center gap-2 p-3 bg-base-100 rounded-xl border border-base-300 overflow-hidden">
+                <.icon name="hero-link" class="size-4 text-base-content/30 flex-shrink-0" />
+                <a href={@generated_link.full_url} target="_blank" rel="noopener"
+                   class="text-xs text-primary hover:underline truncate flex-1 font-mono">
+                  {@generated_link.full_url}
+                </a>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  class="btn btn-primary btn-sm flex-1 sm:flex-none"
+                  phx-hook="CopyToClipboard"
+                  id={"copy-btn-#{@generated_link.id}"}
+                  data-url={@generated_link.full_url}
+                >
+                  <.icon name="hero-clipboard-document" class="size-4" /> Copiar link
+                </button>
+                <%= if @generated_link.status == :pending do %>
+                  <button class="btn btn-outline btn-sm flex-1 sm:flex-none" phx-click="mark_as_sent" phx-value-id={@generated_link.id}>
+                    <.icon name="hero-paper-airplane" class="size-4" /> Marcar enviado
+                  </button>
+                <% else %>
+                  <span class="btn btn-success btn-sm btn-outline no-animation cursor-default">
+                    <.icon name="hero-check" class="size-4" /> Enviado
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <button class="btn btn-primary w-full sm:w-auto" phx-click="generate_link">
+              <.icon name="hero-sparkles" class="size-4" /> Generar link
+            </button>
+          <% end %>
+        </div>
+
+      <% {:allowed, last_link, months_elapsed} -> %>
+        <div class="rounded-2xl border border-success/30 bg-success/5 p-6 space-y-4">
+          <div class="flex items-start gap-4">
+            <div class="size-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0">
+              <.icon name="hero-check-circle" class="size-5 text-success" />
+            </div>
+            <div>
+              <h3 class="font-semibold text-base-content"><%= client && client.name %></h3>
+              <p class="text-sm text-base-content/60 mt-0.5">
+                Último contacto hace {months_elapsed} {if months_elapsed == 1, do: "mes", else: "meses"}
+                <span class="text-base-content/40">· {Calendar.strftime(last_link.inserted_at, "%d/%m/%Y")}</span>
+              </p>
+            </div>
+          </div>
+
+          <%= if @generated_link do %>
+            <div class="border-t border-success/20 pt-4 space-y-3">
+              <div class="flex items-center gap-2 p-3 bg-base-100 rounded-xl border border-base-300 overflow-hidden">
+                <.icon name="hero-link" class="size-4 text-base-content/30 flex-shrink-0" />
+                <a href={@generated_link.full_url} target="_blank" rel="noopener"
+                   class="text-xs text-primary hover:underline truncate flex-1 font-mono">
+                  {@generated_link.full_url}
+                </a>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  class="btn btn-primary btn-sm flex-1 sm:flex-none"
+                  phx-hook="CopyToClipboard"
+                  id={"copy-btn-#{@generated_link.id}"}
+                  data-url={@generated_link.full_url}
+                >
+                  <.icon name="hero-clipboard-document" class="size-4" /> Copiar link
+                </button>
+                <%= if @generated_link.status == :pending do %>
+                  <button class="btn btn-outline btn-sm flex-1 sm:flex-none" phx-click="mark_as_sent" phx-value-id={@generated_link.id}>
+                    <.icon name="hero-paper-airplane" class="size-4" /> Marcar enviado
+                  </button>
+                <% else %>
+                  <span class="btn btn-success btn-sm btn-outline no-animation cursor-default">
+                    <.icon name="hero-check" class="size-4" /> Enviado
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <button class="btn btn-primary w-full sm:w-auto" phx-click="generate_link">
+              <.icon name="hero-sparkles" class="size-4" /> Generar link
+            </button>
+          <% end %>
+        </div>
+
+      <% {:blocked, last_link, months_elapsed, available_on} -> %>
+        <div class="rounded-2xl border border-error/30 bg-error/5 p-6 space-y-3">
+          <div class="flex items-start gap-4">
+            <div class="size-10 rounded-full bg-error/15 flex items-center justify-center flex-shrink-0">
+              <.icon name="hero-no-symbol" class="size-5 text-error" />
+            </div>
+            <div>
+              <h3 class="font-semibold text-base-content"><%= client && client.name %></h3>
+              <p class="text-sm text-base-content/60 mt-0.5">
+                Contactado hace {months_elapsed} {if months_elapsed == 1, do: "mes", else: "meses"}
+                <span class="text-base-content/40">· {Calendar.strftime(last_link.inserted_at, "%d/%m/%Y")}</span>
+              </p>
+              <p class="text-sm font-medium text-error mt-2">
+                Disponible a partir del {Calendar.strftime(available_on, "%d/%m/%Y")}
+              </p>
+            </div>
+          </div>
+        </div>
+    <% end %>
+  <% end %>
+
+  <%!-- Empty state when nothing selected --%>
+  <%= if is_nil(@eligibility) && (@vendor_id || @client_id) do %>
+    <div class="text-center py-8 text-base-content/40 text-sm">
+      <%= cond do %>
+        <% is_nil(@vendor_id) -> %>
+          Selecciona tu nombre para continuar
+        <% is_nil(@client_id) -> %>
+          Selecciona un cliente para ver la disponibilidad
+        <% true -> %>
+          <button class="btn btn-primary w-full sm:w-auto" phx-click="generate_link">
+            <.icon name="hero-sparkles" class="size-4" /> Generar link
+          </button>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,157 @@
+<div class="space-y-6">
+  <%!-- Page header --%>
+  <div class="border-b border-base-300 pb-6">
+    <h1 class="font-serif text-4xl font-semibold text-base-content">Historial</h1>
+    <p class="mt-2 text-base-content/50">Registro de todos los links generados, ordenados por fecha.</p>
+  </div>
+
+  <%!-- Filters --%>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">Vendedor</label>
+      <form phx-update="ignore" id="filter-vendor-form">
+        <select
+          id="filter-vendor-select"
+          phx-hook="TomSelect"
+          data-event="filter"
+          data-key="vendor_id"
+          class="w-full"
+          name="vendor_id"
+        >
+          <option value="">Todos los vendedores</option>
+          <%= for v <- @vendors do %>
+            <option value={v.id} selected={to_string(v.id) == to_string(@filter_vendor_id || "")}>
+              {v.name}
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">Cliente</label>
+      <form phx-update="ignore" id="filter-client-form">
+        <select
+          id="filter-client-select"
+          phx-hook="TomSelect"
+          data-event="filter"
+          data-key="client_id"
+          class="w-full"
+          name="client_id"
+        >
+          <option value="">Todos los clientes</option>
+          <%= for c <- @clients do %>
+            <option value={c.id} selected={to_string(c.id) == to_string(@filter_client_id || "")}>
+              <%= if c.main_contact, do: "#{c.main_contact} · #{c.name}", else: c.name %>
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+
+    <div class="space-y-1.5">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50">Estado</label>
+      <form phx-update="ignore" id="filter-status-form">
+        <select
+          id="filter-status-select"
+          phx-hook="TomSelect"
+          data-event="filter"
+          data-key="status"
+          class="w-full"
+          name="status"
+        >
+          <option value="">Todos los estados</option>
+          <option value="pending" selected={@filter_status == "pending"}>Pendiente</option>
+          <option value="sent" selected={@filter_status == "sent"}>Enviado</option>
+          <option value="responded" selected={@filter_status == "responded"}>Respondido</option>
+          <option value="dismissed" selected={@filter_status == "dismissed"}>No procede</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <%!-- Table --%>
+  <div class="rounded-2xl border border-base-300 overflow-hidden">
+    <table class="table w-full">
+      <thead>
+        <tr class="bg-base-200 border-b border-base-300">
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Fecha</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Vendedor</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Cliente</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Estado</th>
+          <th class="text-xs font-semibold uppercase tracking-wider text-base-content/50 py-3">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= if Enum.empty?(@links) do %>
+          <tr>
+            <td colspan="5" class="text-center py-16">
+              <div class="flex flex-col items-center gap-2 text-base-content/40">
+                <.icon name="hero-inbox" class="size-8" />
+                <p class="text-sm">No hay links registrados</p>
+              </div>
+            </td>
+          </tr>
+        <% else %>
+          <%= for link <- @links do %>
+            <tr class="border-b border-base-200 hover:bg-base-50 transition-colors">
+              <td class="text-xs text-base-content/50 whitespace-nowrap py-3">
+                {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
+                <span class="block text-base-content/30">{Calendar.strftime(link.inserted_at, "%H:%M")}</span>
+              </td>
+              <td class="text-sm font-medium py-3">{link.vendor && link.vendor.name}</td>
+              <td class="py-3">
+                <%= if link.client do %>
+                  <div class="text-sm font-medium">{link.client.main_contact || link.client.name}</div>
+                  <%= if link.client.main_contact do %>
+                    <div class="text-xs text-base-content/40">{link.client.name}</div>
+                  <% end %>
+                <% end %>
+              </td>
+              <td class="py-3">
+                <span class={status_badge_class(link.status)}>
+                  {status_label(link.status)}
+                </span>
+              </td>
+              <td class="py-3">
+                <div class="flex gap-1 items-center">
+                  <a href={link.full_url} target="_blank" rel="noopener"
+                     class="btn btn-ghost btn-xs tooltip" data-tip="Abrir link">
+                    <.icon name="hero-arrow-top-right-on-square" class="size-3.5" />
+                  </a>
+                  <%= if link.status == :pending do %>
+                    <button
+                      class="btn btn-ghost btn-xs text-success tooltip"
+                      data-tip="Marcar como enviado"
+                      phx-click="mark_as_sent"
+                      phx-value-id={link.id}
+                    >
+                      <.icon name="hero-check" class="size-3.5" />
+                    </button>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <%!-- Pagination --%>
+  <%= if length(@links) == 50 || @page > 1 do %>
+    <div class="flex items-center justify-center gap-2">
+      <%= if @page > 1 do %>
+        <button class="btn btn-outline btn-sm" phx-click="page" phx-value-n={@page - 1}>
+          <.icon name="hero-chevron-left" class="size-4" /> Anterior
+        </button>
+      <% end %>
+      <span class="text-sm text-base-content/50 px-3">Página {@page}</span>
+      <%= if length(@links) == 50 do %>
+        <button class="btn btn-outline btn-sm" phx-click="page" phx-value-n={@page + 1}>
+          Siguiente <.icon name="hero-chevron-right" class="size-4" />
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+</div>
