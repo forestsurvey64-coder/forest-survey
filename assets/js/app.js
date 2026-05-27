@@ -23,13 +23,15 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/forest_survey"
-import topbar from "../vendor/topbar"
+import {CopyToClipboard} from "./hooks/copy_to_clipboard"
+import TomSelect from "./hooks/tom_select"
+import topbar from "topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, CopyToClipboard, TomSelect},
 })
 
 // Show progress bar on live navigation and form submits
@@ -80,4 +82,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-

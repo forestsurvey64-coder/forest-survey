@@ -17,21 +17,32 @@ defmodule ForestSurveyWeb.Router do
   scope "/", ForestSurveyWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live_session :default, layout: {ForestSurveyWeb.Layouts, :app} do
+      live "/", GeneratorLive, :index
+      live "/history", HistoryLive, :index
+
+      live "/admin/vendors", VendorsLive, :index
+      live "/admin/vendors/new", VendorsLive, :new
+      live "/admin/vendors/:id/edit", VendorsLive, :edit
+
+      live "/admin/clients", ClientsLive, :index
+      live "/admin/clients/new", ClientsLive, :new
+      live "/admin/clients/:id/edit", ClientsLive, :edit
+
+      live "/admin/config", ConfigLive, :index
+      live "/admin/config/new", ConfigLive, :new
+      live "/admin/config/:id/edit", ConfigLive, :edit
+    end
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", ForestSurveyWeb do
-  #   pipe_through :api
-  # end
+  scope "/rpc", ForestSurveyWeb do
+    pipe_through :api
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
+    post "/run", AshTypescriptRpcController, :run
+    post "/validate", AshTypescriptRpcController, :validate
+  end
+
   if Application.compile_env(:forest_survey, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
@@ -39,6 +50,16 @@ defmodule ForestSurveyWeb.Router do
 
       live_dashboard "/dashboard", metrics: ForestSurveyWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+
+  if Application.compile_env(:forest_survey, :dev_routes) do
+    import AshAdmin.Router
+
+    scope "/ash-admin" do
+      pipe_through :browser
+
+      ash_admin "/"
     end
   end
 end

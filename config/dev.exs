@@ -1,8 +1,13 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
 config :forest_survey, ForestSurvey.Repo,
-  database: Path.expand("../forest_survey_dev.db", __DIR__),
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "forest_survey_dev",
+  port: 5432,
   pool_size: 5,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true

@@ -1,4 +1,5 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
 # Configure your database
 #
@@ -6,7 +7,11 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :forest_survey, ForestSurvey.Repo,
-  database: Path.expand("../forest_survey_test.db", __DIR__),
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "forest_survey_test#{System.get_env("MIX_TEST_PARTITION")}",
+  port: 5432,
   pool_size: 5,
   pool: Ecto.Adapters.SQL.Sandbox
 
